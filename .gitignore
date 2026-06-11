@@ -1,0 +1,17 @@
+venv/
+.env
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+transcripts/
+summaries/
+sample.mp4
+test.txt
+.DS_Store
+Thumbs.db
+.vscode/
+.streamlit/secrets.toml
+ffmpeg/
+meetings.db
+temp.mp3
