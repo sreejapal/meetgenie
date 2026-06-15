@@ -1,5 +1,10 @@
 from transcriber import transcribe_video
 from summarizer import generate_summary
+from speaker_intelligence import (
+    calculate_talk_time,
+    calculate_participation,
+    get_top_speaker
+)
 
 
 def process_video(video_path):
@@ -22,7 +27,23 @@ def process_video(video_path):
     summary = generate_summary(
         transcription["text"]
     )
+    talk_time = calculate_talk_time(
+        transcription["segments"]
+    )
 
+    participation = calculate_participation(
+        talk_time
+    )
+
+    top_speaker = get_top_speaker(
+        talk_time
+    )
+    summary["talk_time"] = talk_time
+    summary["participation"] = participation
+    summary["top_speaker"] = top_speaker
+    summary["speaker_count"] = len(
+        talk_time
+    )
     summary["transcript"] = transcription["text"]
     summary["language"] = transcription["language"]
     summary["duration"] = transcription["duration"]

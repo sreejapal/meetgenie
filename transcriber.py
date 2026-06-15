@@ -2,6 +2,7 @@ import whisper
 import torch
 import os
 import subprocess
+from diarizer import diarize
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -39,14 +40,29 @@ def transcribe_video(video_path):
             audio_path,
             fp16=torch.cuda.is_available()
         )
+        diarization = diarize(audio_path)
+
+        segments = []
+
+        for seg in result.get("segments", []):
+
+            segments.append({
+                "speaker": find_speaker(
+                    seg,
+                    diarization
+                ),
+                "start": seg["start"],
+                "end": seg["end"],
+                "text": seg["text"]
+            })
 
         return {
             "text": result.get("text", ""),
             "language": result.get("language", "unknown"),
-            "segments": result.get("segments", []),
+            "segments": segments,
             "duration": (
-                result["segments"][-1]["end"]
-                if result.get("segments")
+                segments[-1]["end"]
+                if segments
                 else 0
             )
         }
@@ -54,3 +70,21 @@ def transcribe_video(video_path):
     finally:
         if audio_path and os.path.exists(audio_path):
             os.remove(audio_path)
+
+def find_speaker(segment, diarization):
+
+    start = segment["start"]
+    end = segment["end"]
+
+    midpoint = (start + end) / 2
+
+    for speaker_seg in diarization:
+
+        if (
+            speaker_seg["start"]
+            <= midpoint
+            <= speaker_seg["end"]
+        ):
+            return speaker_seg["speaker"]
+
+    return "Unknown"

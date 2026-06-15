@@ -15,3 +15,16 @@ Thumbs.db
 ffmpeg/
 meetings.db
 temp.mp3
+.venv311/
+diarization_env/
+__pycache__/
+uploads/
+transcripts/
+summaries/
+*.db
+*.sqlite
+.env
+sample.mp3
+sample.wav
+sample.mp4
+temp.mp4

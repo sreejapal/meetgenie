@@ -539,6 +539,9 @@ def results_page():
     nav_bar("results")
 
     result = st.session_state.result
+    st.write(result.get("speaker_count"))
+    st.write(result.get("top_speaker"))
+    st.write(result.get("participation"))
     if not result:
         st.error("No summary data found. Please go back and process a meeting.")
         if st.button("← Back", key="results_back"):
@@ -583,11 +586,15 @@ def results_page():
                 start_ts = f"{start//60:02d}:{start%60:02d}"
                 end_ts = f"{end//60:02d}:{end%60:02d}"
 
+                speaker = seg.get("speaker", "Unknown")
+
                 st.markdown(
-                    f"**[{start_ts} - {end_ts}]**  "
-                    f"{seg['text']}"
+                    f"**{speaker}** "
+                    f"**[{start_ts} - {end_ts}]**"
                 )
 
+                st.write(seg["text"])
+                
         else:
 
             st.text_area(
