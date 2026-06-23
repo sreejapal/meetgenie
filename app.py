@@ -1,10 +1,17 @@
 import streamlit as st
 import json
 import os
+import plotly.express as px
 from processor import process_video
+from chat_with_meeting import ask_meeting_question
 from database import init_db, save_meeting, delete_meeting, get_all_meetings, search_meetings
 from email_sender import send_summary_email
 from pdf_exporter import generate_summary_pdf
+from speaker_intelligence import (
+    calculate_talk_time,
+    calculate_participation,
+    get_top_speaker
+)
 
 os.makedirs("uploads", exist_ok=True)
 os.makedirs("transcripts", exist_ok=True)
@@ -602,6 +609,72 @@ def results_page():
                 result.get("transcript", ""),
                 height=300
             )
+
+    # =========================
+# Speaker Analytics
+# =========================
+
+    if segments:
+
+        stats = calculate_talk_time(segments)
+
+        participation = calculate_participation(stats)
+
+        top_speaker = get_top_speaker(stats)
+
+        st.subheader("📊 Speaker Analytics")
+
+        if top_speaker:
+
+            st.metric(
+                "Most Active Speaker",
+                top_speaker
+            )
+
+        st.subheader("Participation")
+
+        for speaker, percent in participation.items():
+
+            talk_time = round(
+                stats[speaker],
+                1
+            )
+
+            st.write(
+                f"**{speaker}** → "
+                f"{percent}% "
+                f"({talk_time}s)"
+            )
+
+        if participation:
+
+            fig = px.pie(
+                values=list(participation.values()),
+                names=list(participation.keys()),
+                title="Speaker Participation"
+            )
+
+            st.plotly_chart(
+                fig,
+                use_container_width=True
+            )
+
+        st.subheader("💬 Chat With Meeting")
+
+        question = st.text_input(
+            "Ask anything about this meeting"
+        )
+
+        if question:
+
+            with st.spinner("Thinking..."):
+
+                answer = ask_meeting_question(
+                    result["transcript"],
+                    question
+                )
+
+                st.success(answer)
 
     overview = result.get("overview", "").strip()
     st.markdown(f"""
