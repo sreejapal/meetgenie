@@ -549,6 +549,7 @@ def results_page():
     st.write(result.get("speaker_count"))
     st.write(result.get("top_speaker"))
     st.write(result.get("participation"))
+
     if not result:
         st.error("No summary data found. Please go back and process a meeting.")
         if st.button("← Back", key="results_back"):
@@ -583,6 +584,21 @@ def results_page():
 
         segments = result.get("segments", [])
 
+        # ✅ ADDED: compute speaker sentiment
+        from collections import defaultdict
+        from sentiment import get_dominant_sentiment
+
+        speaker_sentiments = defaultdict(list)
+
+        for seg in segments:
+            speaker = seg.get("speaker", "Unknown")
+            sentiment = seg.get("sentiment", "NEUTRAL")
+            speaker_sentiments[speaker].append(sentiment)
+
+        speaker_summary = {}
+        for speaker, sentiments in speaker_sentiments.items():
+            speaker_summary[speaker] = get_dominant_sentiment(sentiments)
+
         if segments:
 
             for seg in segments:
@@ -595,13 +611,10 @@ def results_page():
 
                 speaker = seg.get("speaker", "Unknown")
 
-            # DEBUG: remove later
-                #st.write(seg)
-
                 st.markdown(
                     f"**{speaker}** "
                     f"**[{start_ts} - {end_ts}]**"
-            )
+                )
 
                 st.write(seg["text"])
 
@@ -610,7 +623,7 @@ def results_page():
 
                 st.caption(
                     f" Sentiment: {sentiment} ({score:.2f})"
-            )
+                )
 
         else:
 
@@ -618,28 +631,37 @@ def results_page():
                 "Transcript",
                 result.get("transcript", ""),
                 height=300
-        )
+            )
 
     # =========================
-# Speaker Analytics
-# =========================
+    # Speaker Analytics
+    # =========================
 
     if segments:
 
         stats = calculate_talk_time(segments)
-
         participation = calculate_participation(stats)
-
         top_speaker = get_top_speaker(stats)
 
         st.subheader("📊 Speaker Analytics")
 
         if top_speaker:
-
             st.metric(
                 "Most Active Speaker",
                 top_speaker
             )
+
+        # ✅ ADDED: show dominant sentiment
+        st.subheader("🧠 Speaker Sentiment")
+
+        emoji = {
+            "POSITIVE": "😊",
+            "NEGATIVE": "😠",
+            "NEUTRAL": "😐"
+        }
+
+        for speaker, sentiment in speaker_summary.items():
+            st.write(f"**{speaker}** → {emoji.get(sentiment, '')} {sentiment}")
 
         st.subheader("Participation")
 
@@ -660,7 +682,13 @@ def results_page():
 
             fig = px.pie(
                 values=list(participation.values()),
-                names=list(participation.keys()),
+
+                # ✅ CHANGED: add sentiment to labels
+                names=[
+                    f"{speaker} ({speaker_summary.get(speaker, 'NEUTRAL')})"
+                    for speaker in participation.keys()
+                ],
+
                 title="Speaker Participation"
             )
 
